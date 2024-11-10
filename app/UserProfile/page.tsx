@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState } from "react";
 import { db } from "@/Firebase";
@@ -18,6 +18,7 @@ export default function HealthForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Check if all fields are filled out
     if (!email || !allergies || !medicalConditions) {
       toast.error("Please fill all the details");
       setError("Please fill in all the fields.");
@@ -26,18 +27,24 @@ export default function HealthForm() {
 
     setLoading(true);
     try {
+      // Split allergies by commas and trim any extra spaces
+      const allergiesArray = allergies
+        .split(',')
+        .map((allergy) => allergy.trim().toLowerCase());
+
       // Save data to Firebase Firestore
       const docRef = await addDoc(collection(db, "healthInfo"), {
         email,
-        allergies,
+        allergies: allergiesArray, // Store allergies as an array
         medicalConditions,
         createdAt: new Date(),
       });
-      // Redirect user after successful submission
-      toast.success("Thank you for your response")
-      router.push("/");  // You can create a thank-you page
+      
+      // Notify user of successful submission
+      toast.success("Thank you for your response");
+      router.push("/");  // Redirect user to the home page or thank-you page
     } catch (e) {
-      toast.error("Problem in submitting check all the fields")
+      toast.error("Problem in submitting. Check all the fields.");
       console.error("Error adding document: ", e);
       setError("Error submitting form. Please try again.");
     } finally {
@@ -74,7 +81,7 @@ export default function HealthForm() {
           {/* Allergies Textarea */}
           <div>
             <label htmlFor="allergies" className="block text-lg font-medium text-black">
-              Allergies
+              Allergies (separate with commas)
             </label>
             <textarea
               id="allergies"
@@ -82,7 +89,7 @@ export default function HealthForm() {
               onChange={(e) => setAllergies(e.target.value)}
               required
               className="w-full p-4 mt-2 border text-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="List any allergies you have"
+              placeholder="List any allergies you have, separated by commas"
               rows={4}
             ></textarea>
           </div>
