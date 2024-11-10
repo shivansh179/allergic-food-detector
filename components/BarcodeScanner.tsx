@@ -8,7 +8,7 @@ type BarcodeScannerProps = {
 
 const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const beepSound = typeof window !== 'undefined' ? new Audio('/beep.mp3') : null;
+  const beepSound = typeof window !== 'undefined' ? new Audio('/beep.wav') : null;
 
   useEffect(() => {
     const codeReader = new BrowserMultiFormatReader();
@@ -33,7 +33,6 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected }) => {
     startScanner();
 
     return () => {
-    //   codeReader.reset(); // Reset the code reader (releases any ongoing decoding)
       stream?.getTracks().forEach(track => track.stop()); // Stop the video stream
     };
   }, [onDetected, beepSound]);
