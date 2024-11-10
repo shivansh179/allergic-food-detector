@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth, db } from "@/Firebase"; // Import Firebase Authentication and Firestore
 import { collection, query, where, getDocs } from "firebase/firestore";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function Auth() {
   const [email, setEmail] = useState("");
@@ -51,6 +53,7 @@ export default function Auth() {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/UserProfile");
     } catch (err) {
+      toast.error("Credentials are not correct or register first")
       setError("Error logging in. Please check your credentials.");
     } finally {
       setLoading(false);
@@ -66,6 +69,7 @@ export default function Auth() {
       await createUserWithEmailAndPassword(auth, email, password);
       router.push("/UserProfile");
     } catch (err) {
+      toast.error("Something is not right please check first")
       setError("Error registering. Please try again.");
     } finally {
       setLoading(false);
@@ -175,6 +179,7 @@ export default function Auth() {
           </div>
         </div>
       )}
+        <ToastContainer />
     </div>
   );
 }

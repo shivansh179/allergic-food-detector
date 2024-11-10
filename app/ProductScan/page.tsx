@@ -7,7 +7,6 @@ import { auth, db } from '@/Firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { query, collection, where, doc, getDocs } from 'firebase/firestore';
 import Navbar from '@/components/Navbar';
- 
 
 type Product = {
   product_name: string | undefined;
@@ -27,35 +26,34 @@ export default function Home() {
   const [manualBarcode, setManualBarcode] = useState('');
   const [user, setUser] = useState<any>(null);
   const [userAllergies, setUserAllergies] = useState<string[]>([]);
+  const [allergyWarning, setAllergyWarning] = useState<string | null>(null);
+  const [isScannerActive, setIsScannerActive] = useState(true); // State to control active input method (scanner or manual input)
 
-useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      setUser(user);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setUser(user);
 
-      // Query the healthInfo collection where email matches the logged-in user’s email
-      const healthInfoRef = collection(db, 'healthInfo');
-      const q = query(healthInfoRef, where('email', '==', user.email));
-      const querySnapshot = await getDocs(q);
-      console.log(!querySnapshot.empty);
-      
-      if (!querySnapshot.empty) {
-        // Get the first matching document
-        const docSnapshot = querySnapshot.docs[0];
-        const data = docSnapshot.data();
-        setUserAllergies(data.allergies ? data.allergies.split(',').map((a: string) => a.trim().toLowerCase()) : []);
+        // Query the healthInfo collection where email matches the logged-in user’s email
+        const healthInfoRef = collection(db, 'healthInfo');
+        const q = query(healthInfoRef, where('email', '==', user.email));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const docSnapshot = querySnapshot.docs[0];
+          const data = docSnapshot.data();
+          setUserAllergies(data.allergies ? data.allergies.split(',').map((a: string) => a.trim().toLowerCase()) : []);
+        } else {
+          setUserAllergies([]);
+        }
       } else {
+        setUser(null);
         setUserAllergies([]);
       }
-    } else {
-      setUser(null);
-      setUserAllergies([]);
-    }
-  });
+    });
 
-  return () => unsubscribe();
-}, []);
-
+    return () => unsubscribe();
+  }, []);
 
   const handleBarcodeDetected = async (barcode: string) => {
     try {
@@ -70,7 +68,7 @@ useEffect(() => {
 
           const foundAllergy = userAllergies.find(allergy => productIngredients.includes(allergy));
           if (foundAllergy) {
-            alert(`Warning: This product contains an ingredient you're allergic to: ${foundAllergy}`);
+            setAllergyWarning(`Warning: This product contains an ingredient you're allergic to: ${foundAllergy}`);
           }
         }
       } else {
@@ -89,6 +87,21 @@ useEffect(() => {
     }
   };
 
+  const closeAllergyWarning = () => {
+    setAllergyWarning(null);
+  };
+
+  // Toggle between scanner and manual barcode input
+  const toggleScanner = () => {
+    setIsScannerActive(true);
+    setManualBarcode(''); // Reset manual barcode input when switching to scanner
+  };
+
+  const toggleManualInput = () => {
+    setIsScannerActive(false);
+    setManualBarcode(''); // Reset barcode when switching to manual input
+  };
+
   return (
     <>
       <Navbar />
@@ -96,26 +109,60 @@ useEffect(() => {
         <div className="w-full max-w-3xl bg-white rounded-lg shadow-xl p-6">
           <h1 className="text-3xl font-bold text-center text-black mb-6">Scan or Enter a Product Barcode</h1>
 
-          <div className="flex justify-center mb-6">
-            <div className="w-full max-w-md p-4 bg-gray-100 rounded-lg shadow-md">
-              <BarcodeScanner onDetected={handleBarcodeDetected} />
+          {/* Allergy Warning Modal */}
+          {allergyWarning && (
+            <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-50">
+              <div className="bg-red-600 text-white p-6 rounded-md shadow-lg max-w-sm w-full">
+                <p className="font-bold text-lg">{allergyWarning}</p>
+                <button
+                  onClick={closeAllergyWarning}
+                  className="mt-4 w-full bg-white text-red-600 py-2 rounded-md hover:bg-gray-200 focus:outline-none"
+                >
+                  Close Warning
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex flex-col items-center mb-6">
-            <input
-              type="text"
-              value={manualBarcode}
-              onChange={(e) => setManualBarcode(e.target.value)}
-              placeholder="Enter barcode manually"
-              className="p-3 border border-gray-300 rounded-md w-full max-w-xs mb-3"
-            />
-            <button
-              onClick={handleManualBarcodeSubmit}
-              className="w-full max-w-xs bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Submit Barcode
-            </button>
+          {/* Buttons to toggle between scanner and manual input */}
+          <div className="flex justify-center mb-6">
+            {isScannerActive ? (
+              <>
+                <div className="w-full max-w-md p-4 bg-gray-100 rounded-lg shadow-md">
+                  <BarcodeScanner onDetected={handleBarcodeDetected} />
+                </div>
+                <button
+                  onClick={toggleManualInput}
+                  className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Switch to Manual Barcode Input
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col items-center mb-6">
+                  <input
+                    type="text"
+                    value={manualBarcode}
+                    onChange={(e) => setManualBarcode(e.target.value)}
+                    placeholder="Enter barcode manually"
+                    className="p-3 border border-gray-300 rounded-md w-full max-w-xs mb-3"
+                  />
+                  <button
+                    onClick={handleManualBarcodeSubmit}
+                    className="w-full max-w-xs bg-blue-500 text-white py-3 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    Submit Barcode
+                  </button>
+                </div>
+                <button
+                  onClick={toggleScanner}
+                  className="mt-4 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  Switch to Camera Scanner
+                </button>
+              </>
+            )}
           </div>
 
           {product ? (

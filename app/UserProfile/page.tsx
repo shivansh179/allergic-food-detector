@@ -4,6 +4,8 @@ import { useState } from "react";
 import { db } from "@/Firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 export default function HealthForm() {
   const [email, setEmail] = useState("");
@@ -17,6 +19,7 @@ export default function HealthForm() {
     e.preventDefault();
 
     if (!email || !allergies || !medicalConditions) {
+      toast.error("Please fill all the details");
       setError("Please fill in all the fields.");
       return;
     }
@@ -30,11 +33,11 @@ export default function HealthForm() {
         medicalConditions,
         createdAt: new Date(),
       });
-      console.log("Document written with ID: ", docRef.id);
-
       // Redirect user after successful submission
-      router.push("/thank-you");  // You can create a thank-you page
+      toast.success("Thank you for your response")
+      router.push("/");  // You can create a thank-you page
     } catch (e) {
+      toast.error("Problem in submitting check all the fields")
       console.error("Error adding document: ", e);
       setError("Error submitting form. Please try again.");
     } finally {
@@ -63,7 +66,7 @@ export default function HealthForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full p-4 mt-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-4 mt-2 border text-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="Enter your email"
             />
           </div>
@@ -78,7 +81,7 @@ export default function HealthForm() {
               value={allergies}
               onChange={(e) => setAllergies(e.target.value)}
               required
-              className="w-full p-4 mt-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-4 mt-2 border text-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="List any allergies you have"
               rows={4}
             ></textarea>
@@ -94,7 +97,7 @@ export default function HealthForm() {
               value={medicalConditions}
               onChange={(e) => setMedicalConditions(e.target.value)}
               required
-              className="w-full p-4 mt-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full p-4 mt-2 border text-black border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder="List any medical conditions you have"
               rows={4}
             ></textarea>
@@ -119,6 +122,7 @@ export default function HealthForm() {
           <p className="text-sm">Your information is private and secure.</p>
         </div>
       </div>
+      <ToastContainer/>
     </div>
   );
 }
