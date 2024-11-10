@@ -33,7 +33,7 @@ const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onDetected }) => {
     startScanner();
 
     return () => {
-      codeReader.reset(); // Reset the code reader (releases any ongoing decoding)
+    //   codeReader.reset(); // Reset the code reader (releases any ongoing decoding)
       stream?.getTracks().forEach(track => track.stop()); // Stop the video stream
     };
   }, [onDetected, beepSound]);
