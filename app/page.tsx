@@ -20,7 +20,7 @@ export default function Home() {
       setProduct(response.data);
       setError('');
     } catch (err) {
-      setError('Product not found.');
+      setError('Product not found or error fetching data.');
       setProduct(null);
     }
   };

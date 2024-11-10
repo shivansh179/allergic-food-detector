@@ -2,21 +2,27 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import axios from 'axios';
 
+type Product = {
+  name: string;
+  ingredients: string[];
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { barcode } = req.query;
 
   try {
     // Fetch product details from Open Food Facts API
-    const response = await axios.get(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
-
-    // Check if product exists in the database
+    const response = await axios.get(`https://world.openfoodfacts.net/api/v2/product/${barcode}`);
+    
     if (response.data.status === 1) {
-      const product = response.data.product;
-      const productInfo = {
-        name: product.product_name,
-        ingredients: product.ingredients_text ? product.ingredients_text.split(',') : ['No ingredients info available'],
+      const productData = response.data.product;
+      const product: Product = {
+        name: productData.product_name,
+        ingredients: productData.ingredients
+          ? productData.ingredients.map((ingredient: any) => ingredient.text)
+          : ['Ingredients not available'],
       };
-      res.status(200).json(productInfo);
+      res.status(200).json(product);
     } else {
       res.status(404).json({ error: 'Product not found' });
     }
