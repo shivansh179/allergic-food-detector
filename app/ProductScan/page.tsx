@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from 'react';
 import BarcodeScanner from '@/components/BarcodeScanner';
@@ -26,8 +26,9 @@ export default function Home() {
   const [manualBarcode, setManualBarcode] = useState('');
   const [user, setUser] = useState<any>(null);
   const [userAllergies, setUserAllergies] = useState<string[]>([]);
-  const [foundAllergy, setFoundAllergy] = useState<string | null>(null); // Allergy warning state
-  const [useCamera, setUseCamera] = useState(true); // State to toggle between camera and manual input
+  const [foundAllergy, setFoundAllergy] = useState<string | null>(null); // New state for allergy warning
+  const [showCamera, setShowCamera] = useState(false); // New state to toggle between manual input and camera
+  const [signal, setSignal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -43,14 +44,13 @@ export default function Home() {
           const docSnapshot = querySnapshot.docs[0];
           const data = docSnapshot.data();
 
-          // Ensure allergies is an array before using it
           if (Array.isArray(data.allergies)) {
             setUserAllergies(data.allergies.map((a: string) => a.trim().toLowerCase()));
           } else {
-            setUserAllergies([]); // If allergies is not an array, set it as an empty array
+            setUserAllergies([]);
           }
         } else {
-          setUserAllergies([]); // If no matching user data is found
+          setUserAllergies([]);
         }
       } else {
         setUser(null);
@@ -74,10 +74,11 @@ export default function Home() {
 
           // Check each allergy term to see if it's included in the ingredients text
           const foundAllergies = userAllergies.filter(allergy =>
-            productIngredients.includes(allergy.toLowerCase()) // Case-insensitive match
+            productIngredients.includes(allergy.toLowerCase())
           );
 
           if (foundAllergies.length > 0) {
+            setSignal(true);
             setFoundAllergy(foundAllergies.join(', ')); // Show matched allergies
           } else {
             setFoundAllergy(null); // No allergies found
@@ -106,22 +107,24 @@ export default function Home() {
         <div className="w-full max-w-3xl bg-white rounded-lg shadow-xl p-6">
           <h1 className="text-3xl font-bold text-center text-black mb-6">Scan or Enter a Product Barcode</h1>
 
-          <div className="flex justify-center mb-6 space-x-4">
+          {/* Toggle Buttons for Camera and Manual Input */}
+          <div className="flex justify-center mb-6">
             <button
-              onClick={() => setUseCamera(true)}
-              className={`px-4 py-2 rounded-md ${useCamera ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+              onClick={() => setShowCamera(true)}
+              className={`w-full max-w-xs py-3 rounded-md ${showCamera ? 'bg-gray-300' : 'bg-blue-500 text-white'} mr-4`}
             >
-              Use Camera
+              Scan with Camera
             </button>
             <button
-              onClick={() => setUseCamera(false)}
-              className={`px-4 py-2 rounded-md ${!useCamera ? 'bg-blue-500 text-white' : 'bg-gray-300'}`}
+              onClick={() => setShowCamera(false)}
+              className={`w-full max-w-xs py-3 rounded-md ${!showCamera ? 'bg-gray-300' : 'bg-blue-500 text-white'}`}
             >
-              Manual Input
+              Enter Manually
             </button>
           </div>
 
-          {useCamera ? (
+          {/* Barcode Scanner or Manual Input */}
+          {showCamera ? (
             <div className="flex justify-center mb-6">
               <div className="w-full max-w-md p-4 bg-gray-100 rounded-lg shadow-md">
                 <BarcodeScanner onDetected={handleBarcodeDetected} />
@@ -145,28 +148,44 @@ export default function Home() {
             </div>
           )}
 
-          {product ? (
-            <div className="mt-4 p-6 bg-white rounded-lg shadow-md">
-              <h2 className="text-xl font-semibold mb-2">{product.product_name || 'No name available'}</h2>
-              <img
-                src={product.image_url || '/default-image.png'}
-                alt={product.product_name}
-                className="w-32 h-32 object-contain mb-4 mx-auto"
-              />
-              <p><strong>Brand:</strong> {product.brands || 'No brands available'}</p>
-              <p><strong>Categories:</strong> {product.categories || 'No categories available'}</p>
-              <p><strong>Labels:</strong> {product.labels || 'No labels available'}</p>
-              <p><strong>Nutrition Grade:</strong> {product.nutrition_grades || 'No nutrition grade available'}</p>
-              <p><strong>Barcode:</strong> {product.code || 'No barcode available'}</p>
+         {product ? (
+  <div className="mt-4 p-6 bg-white rounded-lg shadow-md relative">
+    {/* Red or Green Signal for Allergy or Health Status */}
+    <div className="absolute top-4 right-4 w-12 h-12 flex items-center justify-center rounded-full">
+      {signal ? (
+        <span className="text-white text-3xl font-bold bg-red-600 w-10 h-10 flex items-center justify-center rounded-full">
+          ! - Not Healthy
+        </span>
+      ) : (
+        <span className="text-white text-3xl font-bold bg-green-600 w-10 h-10 flex items-center justify-center rounded-full">
+          ✓ 
+        </span>
+                    
+      )}
+    </div>
 
-              <h3 className="font-medium mt-4">Ingredients:</h3>
-              <p>{product.ingredients_text || 'Ingredients not available'}</p>
-            </div>
-          ) : error ? (
-            <p className="text-red-500 mt-4 text-center">{error}</p>
-          ) : (
-            <p className="mt-4 text-center">Scan a barcode or enter it manually to see the product details</p>
-          )}
+    {/* Product Details */}
+    <h2 className="text-xl font-semibold mb-2">{product.product_name || 'No name available'}</h2>
+    <img
+      src={product.image_url || '/default-image.png'}
+      alt={product.product_name}
+      className="w-32 h-32 object-contain mb-4 mx-auto"
+    />
+    <p><strong>Brand:</strong> {product.brands || 'No brands available'}</p>
+    <p><strong>Categories:</strong> {product.categories || 'No categories available'}</p>
+    <p><strong>Labels:</strong> {product.labels || 'No labels available'}</p>
+    <p><strong>Nutrition Grade:</strong> {product.nutrition_grades || 'No nutrition grade available'}</p>
+    <p><strong>Barcode:</strong> {product.code || 'No barcode available'}</p>
+
+    <h3 className="font-medium mt-4">Ingredients:</h3>
+    <p>{product.ingredients_text || 'Ingredients not available'}</p>
+  </div>
+) : error ? (
+  <p className="text-red-500 mt-4 text-center">{error}</p>
+) : (
+  <p className="mt-4 text-center">Scan a barcode or enter it manually to see the product details</p>
+)}
+
 
           {/* Allergy Warning Modal */}
           {foundAllergy && (
